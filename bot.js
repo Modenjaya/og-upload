@@ -51,7 +51,7 @@ const logger = {
 
 const CHAIN_ID = 16601;
 const RPC_URL = 'https://evmrpc-testnet.0g.ai';
-const CONTRACT_ADDRESS = '0xbD75111F80b4E22698D0Cd7612d92BDb8eaff628'; // Alamat kontrak yang diperbarui
+const CONTRACT_ADDRESS = '0xbD75117F80b4E22698D0Cd7612d92BDb8eaff628'; // Alamat kontrak yang diperbarui
 const METHOD_ID = '0xef3e12dc'; // Fungsi 'store(bytes32,uint64)'
 const PROXY_FILE = 'proxy.txt';
 const PRIVATE_KEYS_FILE = 'private_keys.txt';
