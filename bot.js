@@ -1,13 +1,15 @@
-// Bagian 1 dari 4 (Dimodifikasi)
-// Menghapus require('dotenv').config();
-const { ethers } = require('ethers');
-const axios = require('axios');
-const readline = require('readline');
-const crypto = require('crypto');
-const fs = require('fs');
-const { HttpsProxyAgent } = require('https-proxy-agent');
-// Menggunakan SDK untuk ZgFile dan Indexer
-const { ZgFile, Indexer } = require('@0glabs/0g-ts-sdk');
+// Bagian 1 dari 4 (Dimodifikasi ke ES Module penuh)
+// Hapus `require` dan ganti dengan `import` untuk semua modul
+import { Wallet, JsonRpcProvider, FallbackProvider, sha256, formatEther, Contract, AbiCoder } from 'ethers';
+import axios from 'axios';
+import readline from 'readline';
+import crypto from 'crypto'; // Menggunakan modul crypto bawaan Node.js
+import fs from 'fs';
+import path from 'path'; // Digunakan untuk path file
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { fileURLToPath } from 'url'; // Untuk __filename dan __dirname di ES Module
+// SDK 0G Labs
+import { ZgFile, Indexer } from '@0glabs/0g-ts-sdk';
 
 
 // === Konstanta & Logger ===
@@ -49,11 +51,10 @@ const logger = {
 
 const CHAIN_ID = 16601;
 const RPC_URL = 'https://evmrpc-testnet.0g.ai';
-// MODIFIKASI: CONTRACT_ADDRESS diubah
 const CONTRACT_ADDRESS = '0xbD75117F80b4E22698D0Cd7612d92BDb8eaff628';
 const METHOD_ID = '0xef3e12dc'; // Fungsi 'store(bytes32,uint64)'
 const PROXY_FILE = 'proxy.txt';
-const PRIVATE_KEYS_FILE = 'private_keys.txt'; // FILE BARU UNTUK PRIVATE KEYS
+const PRIVATE_KEYS_FILE = 'private_keys.txt';
 const INDEXER_URL = 'https://indexer-storage-testnet-turbo.0g.ai';
 const EXPLORER_URL = 'https://chainscan-galileo.0g.ai/tx/';
 
@@ -65,17 +66,28 @@ const IMAGE_SOURCES = [
 let privateKeys = [];
 let currentKeyIndex = 0;
 
-const isEthersV6 = ethers.version.startsWith('6');
-const parseUnits = isEthersV6 ? ethers.parseUnits : ethers.utils.parseUnits;
-const parseEther = isEthersV6 ? ethers.parseEther : ethers.utils.parseEther;
-const formatEther = isEthersV6 ? ethers.formatEther : ethers.utils.formatEther;
+// Perbaikan untuk ethers v6 (parseUnits, parseEther, formatEther langsung dari ethers)
+// isEthersV6 tidak lagi dibutuhkan jika selalu v6
+// const parseUnits = ethers.parseUnits; // Langsung dari import
+// const parseEther = ethers.parseEther; // Langsung dari import
+// const formatEther = ethers.formatEther; // Langsung dari import
 
-const provider = isEthersV6
-  ? new ethers.JsonRpcProvider(RPC_URL)
-  : new ethers.providers.JsonRpcProvider(RPC_URL);
+// Perbaikan: JsonRpcProvider dan FallbackProvider langsung dari import
+const provider = new JsonRpcProvider(RPC_URL);
+
+// Untuk __filename dan __dirname di ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const GENERATED_DIR = path.join(__dirname, 'generated-files');
+
+// Pastikan folder exists
+if (!fs.existsSync(GENERATED_DIR)) {
+  fs.mkdirSync(GENERATED_DIR);
+}
+
 
 // Bagian 2 dari 4 (Dimodifikasi)
-// MODIFIKASI: loadPrivateKeys() untuk membaca dari private_keys.txt
+
 function loadPrivateKeys() {
   try {
     if (!fs.existsSync(PRIVATE_KEYS_FILE)) {
@@ -86,7 +98,7 @@ function loadPrivateKeys() {
     const data = fs.readFileSync(PRIVATE_KEYS_FILE, 'utf8');
     privateKeys = data.split('\n')
       .map(key => key.trim())
-      .filter(key => key && isValidPrivateKey(key)); // Filter baris kosong dan validasi
+      .filter(key => key && isValidPrivateKey(key));
 
     if (privateKeys.length === 0) {
       logger.critical(`No valid private keys found in ${PRIVATE_KEYS_FILE}`);
@@ -104,25 +116,18 @@ function isValidPrivateKey(key) {
   key = key.trim();
   if (!key.startsWith('0x')) key = '0x' + key;
   try {
-    const bytes = Buffer.from(key.replace('0x', ''), 'hex');
-    // Ethers.js Wallet constructor akan melempar error jika PK tidak valid panjangnya
-    new ethers.Wallet(key);
-    return key.length === 66 && bytes.length === 32;
+    new Wallet(key); // Menggunakan Wallet dari import
+    return key.length === 66; // Private key hex string selalu 66 karakter (0x + 64 hex)
   } catch (error) {
     return false;
   }
 }
 
 function getNextPrivateKey() {
-  // Untuk bot yang loop melalui semua wallet, ini akan digunakan di dalam loop `main`
-  // dan `currentKeyIndex` akan disetel secara eksternal.
-  // Fungsi ini sekarang hanya mengembalikan kunci saat ini.
   return privateKeys[currentKeyIndex];
 }
 
 function rotatePrivateKey() {
-  // Fungsi ini mungkin tidak lagi digunakan secara internal di loop `main`
-  // tetapi tetap ada jika ada kebutuhan untuk memutar kunci di luar loop utama.
   currentKeyIndex = (currentKeyIndex + 1) % privateKeys.length;
   return privateKeys[currentKeyIndex];
 }
@@ -215,7 +220,7 @@ const rl = readline.createInterface({
 });
 
 function initializeWallet(privateKey) { // Menerima private key sebagai argumen
-  return new ethers.Wallet(privateKey, provider);
+  return new Wallet(privateKey, provider); // Menggunakan Wallet dari import
 }
 // Bagian 3 dari 4
 
@@ -267,18 +272,15 @@ async function prepareImageData(imageBuffer) {
 
   while (attempt <= MAX_HASH_ATTEMPTS) {
     try {
-      // Ganti crypto.randomBytes dan timestamp dengan sha256 murni dari imageBuffer
-      // karena kontrak store mengharapkan hash data asli
       const hash = '0x' + crypto.createHash('sha256').update(imageBuffer).digest('hex');
       
       const fileExists = await checkFileExists(hash);
       if (fileExists) {
         logger.warn(`Hash ${hash} already exists (finalized), retrying with new image...`);
         attempt++;
-        // Untuk menghasilkan hash yang unik, kita perlu gambar yang berbeda
-        // Solusi terbaik adalah mendapatkan gambar baru di sini atau di loop utama
-        // Untuk menjaga prepareImageData tetap fokus, kita akan melempar error agar loop utama mengambil gambar baru
-        throw new Error("Duplicate hash detected, fetch new image.");
+        // Jika hash duplikat, kita perlu mendapatkan gambar baru untuk mencoba lagi
+        imageBuffer = await fetchRandomImage(); // Ambil gambar baru di sini
+        continue;
       }
       const imageBase64 = Buffer.from(imageBuffer).toString('base64');
       logger.success(`Generated unique file hash: ${hash}`);
@@ -292,10 +294,6 @@ async function prepareImageData(imageBuffer) {
       attempt++;
       if (attempt > MAX_HASH_ATTEMPTS) {
         throw new Error(`Failed to generate unique hash after ${MAX_HASH_ATTEMPTS} attempts`);
-      }
-      // Jika error adalah duplicate hash, coba lagi fetch gambar baru
-      if (error.message.includes("Duplicate hash detected")) {
-        imageBuffer = await fetchRandomImage(); // Dapatkan gambar baru
       }
     }
   }
@@ -344,8 +342,7 @@ async function uploadToStorage(imageData, imageBuffer, wallet, walletIndex) { //
         imageData.root,         // bytes32 _root
         BigInt(imageBuffer.length) // uint64 _dataSize (gunakan BigInt untuk angka besar)
       ]);
-      // Pastikan imageBuffer tersedia di sini untuk imageBuffer.length
-
+      
       // Nilai (value) untuk transaksi, berdasarkan analisis tx sebelumnya (0x4e1003b28d10)
       // Ini adalah biaya on-chain untuk pendaftaran penyimpanan
       const value = parseEther('0.000839233398436224'); // Pastikan ini konsisten dengan biaya saat ini
@@ -403,7 +400,6 @@ async function uploadToStorage(imageData, imageBuffer, wallet, walletIndex) { //
             break;
           }
         } catch (e) {
-          // Log error jika bukan rate limit, tapi jangan lempar untuk memungkinkan retry
           if (e.code === -32005 || (e.message && e.message.includes("rate"))) {
             logger.warn(`Rate limited or temporary error fetching receipt, retrying after ${delayMs}ms...`);
           } else {
@@ -412,7 +408,7 @@ async function uploadToStorage(imageData, imageBuffer, wallet, walletIndex) { //
         }
 
         await new Promise(r => setTimeout(r, delayMs));
-        delayMs = Math.min(delayMs * 1.5, 30000); // Backoff delay
+        delayMs = Math.min(delayMs * 1.5, 30000);
       }
 
       if (!receipt || !receipt.blockNumber) {
@@ -460,7 +456,7 @@ async function main() {
 
     console.log(colors.cyan + "Available wallets:" + colors.reset);
     privateKeys.forEach((key, index) => {
-      const wallet = new ethers.Wallet(key, provider); // Inisialisasi Wallet dengan provider
+      const wallet = initializeWallet(key); // Inisialisasi Wallet dengan PK dari array
       console.log(`${colors.green}[${index + 1}]${colors.reset} ${wallet.address}`);
     });
     console.log();
@@ -510,7 +506,7 @@ async function main() {
 
         try {
           const imageBuffer = await fetchRandomImage(); // Dapatkan buffer gambar
-          const imageData = await prepareImageData(imageBuffer); // Hasilnya mengandung root dan data base64
+          const imageData = await prepareImageData(imageBuffer); // Hasilnya mengandung root, data base64, dan size
           await uploadToStorage(imageData, imageBuffer, wallet, walletIndex); // Kirim imageBuffer juga
           successful++;
           logger.success(`Upload ${uploadNumber} completed`);
