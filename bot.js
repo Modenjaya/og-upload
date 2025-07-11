@@ -66,12 +66,6 @@ const IMAGE_SOURCES = [
 let privateKeys = [];
 let currentKeyIndex = 0;
 
-// Perbaikan: Hapus deklarasi ulang ini, karena sudah diimpor langsung dari 'ethers'
-// const isEthersV6 = ethers.version.startsWith('6');
-// const parseUnits = isEthersV6 ? ethers.parseUnits : ethers.utils.parseUnits;
-// const parseEther = isEthersV6 ? ethers.parseEther : ethers.utils.parseEther;
-// const formatEther = isEthersV6 ? ethers.formatEther : ethers.utils.formatEther;
-
 const provider = new ethers.JsonRpcProvider(RPC_URL); // Menggunakan ethers.JsonRpcProvider dari import
 
 // Untuk __filename dan __dirname di ES Modules
@@ -345,7 +339,8 @@ async function uploadToStorage(imageData, imageBuffer, wallet, walletIndex) { //
       // Nilai (value) untuk transaksi, berdasarkan analisis tx sebelumnya (0x4e1003b28d10)
       // Ini adalah biaya on-chain untuk pendaftaran penyimpanan
       const value = ethers.parseEther('0.000839233398436224'); // Pastikan ini konsisten dengan biaya saat ini
-      const gasPrice = await provider.getGasPrice(); // Dapatkan gasPrice terbaru dari network
+      const feeData = await provider.getFeeData(); // Menggunakan getFeeData() di ethers v6
+      const gasPrice = feeData.gasPrice; // Ekstrak gasPrice
 
       logger.loading('Estimating gas...');
       let gasLimit;
