@@ -1,6 +1,6 @@
-// Bagian 1 dari 4 (Dimodifikasi)
+// Bagian 1 dari 4 (Dimodifikasi ke ES Module penuh dan import ethers secara keseluruhan)
 // Hapus `require` dan ganti dengan `import` untuk semua modul
-import { Wallet, JsonRpcProvider, FallbackProvider, sha256, formatEther, Contract, AbiCoder, parseEther, parseUnits } from 'ethers';
+import * as ethers from 'ethers'; // IMPOR SEMUA DARI ETHERS SEBAGAI NAMESPACE
 import axios from 'axios';
 import readline from 'readline';
 import crypto from 'crypto'; // Menggunakan modul crypto bawaan Node.js
@@ -72,7 +72,7 @@ let currentKeyIndex = 0;
 // const parseEther = isEthersV6 ? ethers.parseEther : ethers.utils.parseEther;
 // const formatEther = isEthersV6 ? ethers.formatEther : ethers.utils.formatEther;
 
-const provider = new JsonRpcProvider(RPC_URL); // Menggunakan JsonRpcProvider dari import
+const provider = new ethers.JsonRpcProvider(RPC_URL); // Menggunakan ethers.JsonRpcProvider dari import
 
 // Untuk __filename dan __dirname di ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -115,7 +115,7 @@ function isValidPrivateKey(key) {
   key = key.trim();
   if (!key.startsWith('0x')) key = '0x' + key;
   try {
-    new Wallet(key); // Menggunakan Wallet dari import
+    new ethers.Wallet(key); // Menggunakan ethers.Wallet dari import
     return key.length === 66; // Private key hex string selalu 66 karakter (0x + 64 hex)
   } catch (error) {
     return false;
@@ -219,7 +219,7 @@ const rl = readline.createInterface({
 });
 
 function initializeWallet(privateKey) { // Menerima private key sebagai argumen
-  return new Wallet(privateKey, provider); // Menggunakan Wallet dari import
+  return new ethers.Wallet(privateKey, provider); // Menggunakan ethers.Wallet dari import
 }
 // Bagian 3 dari 4
 
@@ -306,12 +306,12 @@ async function uploadToStorage(imageData, imageBuffer, wallet, walletIndex) { //
 
   logger.loading(`Checking wallet balance for ${wallet.address}...`);
   const balance = await provider.getBalance(wallet.address);
-  const minBalance = parseEther('0.0015'); // Minimum saldo untuk biaya gas + biaya penyimpanan
+  const minBalance = ethers.parseEther('0.0015'); // Minimum saldo untuk biaya gas + biaya penyimpanan
   
   if (BigInt(balance) < BigInt(minBalance)) {
-    throw new Error(`Insufficient balance: ${formatEther(balance)} OG (required >${formatEther(minBalance)} OG)`);
+    throw new Error(`Insufficient balance: ${ethers.formatEther(balance)} OG (required >${ethers.formatEther(minBalance)} OG)`);
   }
-  logger.success(`Wallet balance: ${formatEther(balance)} OG`);
+  logger.success(`Wallet balance: ${ethers.formatEther(balance)} OG`);
 
   while (attempt <= MAX_RETRIES) {
     try {
@@ -344,7 +344,7 @@ async function uploadToStorage(imageData, imageBuffer, wallet, walletIndex) { //
       
       // Nilai (value) untuk transaksi, berdasarkan analisis tx sebelumnya (0x4e1003b28d10)
       // Ini adalah biaya on-chain untuk pendaftaran penyimpanan
-      const value = parseEther('0.000839233398436224'); // Pastikan ini konsisten dengan biaya saat ini
+      const value = ethers.parseEther('0.000839233398436224'); // Pastikan ini konsisten dengan biaya saat ini
       const gasPrice = await provider.getGasPrice(); // Dapatkan gasPrice terbaru dari network
 
       logger.loading('Estimating gas...');
@@ -366,7 +366,7 @@ async function uploadToStorage(imageData, imageBuffer, wallet, walletIndex) { //
       const gasCost = BigInt(gasPrice) * gasLimit;
       const requiredBalance = gasCost + BigInt(value);
       if (BigInt(balance) < requiredBalance) {
-        throw new Error(`Insufficient balance for transaction: ${formatEther(balance)} OG (required ~${formatEther(requiredBalance)} OG)`);
+        throw new Error(`Insufficient balance for transaction: ${ethers.formatEther(balance)} OG (required ~${ethers.formatEther(requiredBalance)} OG)`);
       }
 
       logger.loading('Sending transaction...');
@@ -488,12 +488,12 @@ async function main() {
       // Periksa saldo di awal pemrosesan setiap wallet
       try {
         const balance = await provider.getBalance(wallet.address);
-        const minBalanceThreshold = parseEther('0.0015'); // Ambang batas minimum
+        const minBalanceThreshold = ethers.parseEther('0.0015'); // Ambang batas minimum
         if (BigInt(balance) < BigInt(minBalanceThreshold)) {
-          logger.warn(`Wallet ${wallet.address} memiliki saldo rendah (${formatEther(balance)} OG). Melewatkan wallet ini.`);
+          logger.warn(`Wallet ${wallet.address} memiliki saldo rendah (${ethers.formatEther(balance)} OG). Melewatkan wallet ini.`);
           continue; // Lanjut ke wallet berikutnya
         }
-        logger.info(`Wallet ${wallet.address} memiliki saldo cukup: ${formatEther(balance)} OG`);
+        logger.info(`Wallet ${wallet.address} memiliki saldo cukup: ${ethers.formatEther(balance)} OG`);
       } catch (balanceError) {
         logger.error(`Failed to check balance for ${wallet.address}: ${balanceError.message}. Skipping wallet.`);
         continue;
