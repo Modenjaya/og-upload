@@ -1,6 +1,6 @@
-// Bagian 1 dari 4 (Dimodifikasi ke ES Module penuh)
+// Bagian 1 dari 4 (Dimodifikasi)
 // Hapus `require` dan ganti dengan `import` untuk semua modul
-import { Wallet, JsonRpcProvider, FallbackProvider, sha256, formatEther, Contract, AbiCoder } from 'ethers';
+import { Wallet, JsonRpcProvider, FallbackProvider, sha256, formatEther, Contract, AbiCoder, parseEther, parseUnits } from 'ethers';
 import axios from 'axios';
 import readline from 'readline';
 import crypto from 'crypto'; // Menggunakan modul crypto bawaan Node.js
@@ -51,7 +51,7 @@ const logger = {
 
 const CHAIN_ID = 16601;
 const RPC_URL = 'https://evmrpc-testnet.0g.ai';
-const CONTRACT_ADDRESS = '0xbD75117F80b4E22698D0Cd7612d92BDb8eaff628';
+const CONTRACT_ADDRESS = '0xbD75111F80b4E22698D0Cd7612d92BDb8eaff628'; // Alamat kontrak yang diperbarui
 const METHOD_ID = '0xef3e12dc'; // Fungsi 'store(bytes32,uint64)'
 const PROXY_FILE = 'proxy.txt';
 const PRIVATE_KEYS_FILE = 'private_keys.txt';
@@ -66,14 +66,13 @@ const IMAGE_SOURCES = [
 let privateKeys = [];
 let currentKeyIndex = 0;
 
-// Perbaikan untuk ethers v6 (parseUnits, parseEther, formatEther langsung dari ethers)
-// isEthersV6 tidak lagi dibutuhkan jika selalu v6
-// const parseUnits = ethers.parseUnits; // Langsung dari import
-// const parseEther = ethers.parseEther; // Langsung dari import
-// const formatEther = ethers.formatEther; // Langsung dari import
+// Perbaikan: Hapus deklarasi ulang ini, karena sudah diimpor langsung dari 'ethers'
+// const isEthersV6 = ethers.version.startsWith('6');
+// const parseUnits = isEthersV6 ? ethers.parseUnits : ethers.utils.parseUnits;
+// const parseEther = isEthersV6 ? ethers.parseEther : ethers.utils.parseEther;
+// const formatEther = isEthersV6 ? ethers.formatEther : ethers.utils.formatEther;
 
-// Perbaikan: JsonRpcProvider dan FallbackProvider langsung dari import
-const provider = new JsonRpcProvider(RPC_URL);
+const provider = new JsonRpcProvider(RPC_URL); // Menggunakan JsonRpcProvider dari import
 
 // Untuk __filename dan __dirname di ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -335,7 +334,7 @@ async function uploadToStorage(imageData, imageBuffer, wallet, walletIndex) { //
       });
       logger.success('File segment uploaded');
 
-      // MODIFIKASI: Bentuk 'data' untuk transaksi kontrak store()
+      // Bentuk 'data' untuk transaksi kontrak store()
       // Menggunakan AbiCoder untuk encoding parameter bytes32 dan uint64
       const iface = new ethers.Interface([`function store(bytes32 _root, uint64 _dataSize)`]);
       const data = iface.encodeFunctionData("store", [
