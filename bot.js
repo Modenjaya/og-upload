@@ -51,8 +51,10 @@ const logger = {
 
 const CHAIN_ID = 16601;
 const RPC_URL = 'https://evmrpc-testnet.0g.ai';
-const CONTRACT_ADDRESS = '0xbD75117F80b4E22698D0Cd7612d92BDb8eaff628'; // Alamat kontrak yang diperbarui
-const METHOD_ID = '0xef3e12dc'; // Fungsi 'store(bytes32,uint64)'
+// CONTRACT_ADDRESS tidak lagi digunakan secara langsung jika memakai SDK Indexer.upload
+// Namun, biarkan untuk referensi atau jika SDK membutuhkan konfigurasi ini secara internal
+const CONTRACT_ADDRESS = '0xbD75117F80b4E22698D0Cd7612d92BDb8eaff628';
+const METHOD_ID = '0xef3e12dc'; // Fungsi 'store(bytes32,uint64)' - tidak lagi digunakan secara langsung
 const PROXY_FILE = 'proxy.txt';
 const PRIVATE_KEYS_FILE = 'private_keys.txt';
 const INDEXER_URL = 'https://indexer-storage-testnet-turbo.0g.ai';
