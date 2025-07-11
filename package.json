@@ -1,0 +1,17 @@
+{
+  "name": "og-upload-simple-bot",
+  "version": "1.0.0",
+  "description": "0g Upload BOT",
+  "main": "bot.js",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "ethers": "^6.x.x",
+    "axios": "^1.x.x",
+    "socks-proxy-agent": "^8.x.x",
+    "https-proxy-agent": "^7.x.x",
+    "@0glabs/0g-ts-sdk": "^0.1.0"
+  }
+}
